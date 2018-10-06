@@ -1,35 +1,26 @@
 # simple_hash.c
 
-This project is based on [avsej's hashset.c project](https://github.com/avsej/hashset.c).There are some improvement on Avsej's version.
-- Some codes changed for supporting array and string.
-- Custom hash function added.
-- HashMap had added.
-- Some codes changed for improving performance.
+This is very simple hashset and hashmap implementation. Project is based on [avsej's hashset.c project](https://github.com/avsej/hashset.c). There are some improvement on Avsej's version.
 
-Tested on MacOSX Clang 9.0. But as soon as posible I willl test on Windows and Linux.
+- Supports string as key
+- Custom hash function added
+- HashMap had added
+- Performance improvement
+
+Tested on MacOSX Clang 9.0. But as soon as posible I will test on Windows and Linux.
 
 ## Installing
 
 Just import **simple_hash.c** and **simple_hash.h** files to your project and that is all you need. Please check examples.
 
-## Todo
-
- - [ ] Support integer type for key.
- - [ ] Add C++ wrapper.
- - [ ] Create unit tests.
- - [ ] Test on large dataset.
- - [ ] Create performance comperations charts.
- - [ ] Create some example project.
-
-
 ## HashSet Example
 
+```c
     #include "simple_hash.h"
 
-    size_t customHash(void* s, size_t len)
+    unsigned int customHash(char* p, unsigned int key_len)
     {
-        char * p = (char*)s;
-        size_t hash = 0;
+        unsigned int hash = 0;
         for (; *p; ++p)
             hash ^= *p + 0x9e3779b9 + (hash << 6) + (hash >> 2);
         return hash;
@@ -40,24 +31,26 @@ Just import **simple_hash.c** and **simple_hash.h** files to your project and th
     hashset_t set = hashset_create();
 
     if (set == NULL) {
-    	fprintf(stderr, "failed to create hashset instance\n");
-    	abort();
+        fprintf(stderr, "failed to create hashset instance\n");
+        abort();
     }
 
-    hashset_set_hash_function(map, customHash);
-    hashset_add(set, foo, 3);
-    assert(hashset_is_member(set, foo, 3) == 1);
-    assert(hashset_is_member(set, missing, 3) == 0);
+    hashset_set_hash_function(set, customHash);
+    hashset_add(set, foo, strlen(foo));
+    assert(hashset_is_member(set, foo, strlen(foo)) == 1);
+    assert(hashset_is_member(set, missing, strlen(missing)) == 0);
+    hashset_destroy(set);
 
+```
 
-## HashSet Example
+## HashMap Example
 
+```c
     #include "simple_hash.h"
 
-    size_t customHash(void* s, size_t len)
+    unsigned int customHash(char* p, unsigned int key_len)
     {
-        char * p = (char*)s;
-        size_t hash = 0;
+        unsigned int hash = 0;
         for (; *p; ++p)
             hash ^= *p + 0x9e3779b9 + (hash << 6) + (hash >> 2);
         return hash;
@@ -66,15 +59,28 @@ Just import **simple_hash.c** and **simple_hash.h** files to your project and th
     char *foo = "foo";
     char *bar = "bar";
     char *missing = "missing";
-    hashmap_t set = hashmap_create();
-
-    if (set == NULL) {
-    	fprintf(stderr, "failed to create hashmap instance\n");
-    	abort();
+    hashmap_t map = hashmap_create();
+    
+    if (map == NULL) {
+        fprintf(stderr, "failed to create hashmap instance\n");
+        abort();
     }
-
+    
     hashmap_set_hash_function(map, customHash);
-    hashmap_add(set, foo, 3, bar);
-    assert(hashmap_is_member(set, foo, 3) == 1);
-    assert(hashmap_is_member(set, missing, 3) == 0);
-    assert(strcmp(hashmap_get(set, missing, 3), bar) == 0);
+    hashmap_add(map, foo, strlen(foo), bar);
+    assert(hashmap_is_member(map, foo, strlen(foo)) == 1);
+    assert(hashmap_is_member(map, missing, strlen(missing)) == 0);
+    assert(strcmp((char*)hashmap_get(map, foo, strlen(foo)), bar) == 0);
+    hashmap_destroy(map);
+
+```
+
+## Todos
+
+ - [ ] Support integer type for **key**
+ - [ ] Add C++ wrapper
+ - [ ] Create unit tests
+ - [ ] Test on large dataset
+ - [ ] Create performance comperations charts
+ - [ ] Create some example project
+ - [ ] Add Makefile

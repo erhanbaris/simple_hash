@@ -25,7 +25,8 @@
 extern "C" {
 #endif
 
-    typedef unsigned int(*hash_func_t)(void*, unsigned int);
+    /* hash function */
+    typedef unsigned int(*hash_func_t)(char*, unsigned int);
 
     struct hashset_st;
     typedef struct hashset_st *hashset_t;
@@ -42,8 +43,10 @@ extern "C" {
     /* set hash function */
     void hashset_set_hash_function(hashset_t set, hash_func_t func);
     
+    /* Just clear data but do not create anything*/
     void hashset_clean(hashset_t set);
 
+    /* total items count */
     unsigned int hashset_num_items(hashset_t set);
 
     /* add item into the hashset.
@@ -53,24 +56,20 @@ extern "C" {
      *
      * returns zero if the item already in the set and non-zero otherwise
      */
-    int hashset_add(hashset_t set, void *item, u_int len);
-
+    int hashset_add(hashset_t set, char* key, unsigned int key_len);
 
     /* remove item from the hashset
      *
      * returns non-zero if the item was removed and zero if the item wasn't
      * exist
      */
-    int hashset_remove(hashset_t set, void *item, u_int len);
+    int hashset_remove(hashset_t set, char *key, unsigned int key_len);
 
     /* check if existence of the item
      *
      * returns non-zero if the item exists and zero otherwise
      */
-    int hashset_is_member(hashset_t set, void *item, u_int len);
-
-
-
+    int hashset_is_member(hashset_t set, char* key, unsigned int key_len);
 
     /* create hashmap instance */
     hashmap_t hashmap_create(void);
@@ -81,10 +80,11 @@ extern "C" {
     /* set hash function */
     void hashmap_set_hash_function(hashmap_t set, hash_func_t func);
 
-    /* Just clear data but do not create anthing*/
+    /* Just clear data but do not create anything*/
     void hashmap_clean(hashmap_t set);
 
-    u_int hashmap_num_items(hashmap_t set);
+    /* total items count */
+    unsigned int hashmap_num_items(hashmap_t set);
 
     /* add item into the hashmap.
      *
@@ -93,26 +93,26 @@ extern "C" {
      *
      * returns zero if the item already in the set and non-zero otherwise
      */
-    int hashmap_add(hashmap_t set, void *item, u_int len, void* data);
+    int hashmap_add(hashmap_t set, char* key, unsigned int key_len, void* data);
 
     /* get item from the hashmap.
      *
      * returns stored item
      */
-    void* hashmap_get(hashmap_t set, void *item, u_int len);
+    void* hashmap_get(hashmap_t set, char* key, unsigned int key_len);
 
     /* remove item from the hashmap
      *
      * returns non-zero if the item was removed and zero if the item wasn't
      * exist
      */
-    int hashmap_remove(hashmap_t set, void *item, u_int len);
+    int hashmap_remove(hashmap_t set, char* key, unsigned int key_len);
 
     /* check if existence of the item
      *
      * returns non-zero if the item exists and zero otherwise
      */
-    int hashmap_is_member(hashmap_t set, void *item, u_int len);
+    int hashmap_is_member(hashmap_t set, char* key, unsigned int key_len);
 
 #ifdef __cplusplus
 }

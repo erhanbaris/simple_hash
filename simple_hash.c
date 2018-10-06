@@ -16,7 +16,7 @@
  *   limitations under the License.
  */
 
-#include "hashset.h"
+#include "simple_hash.h"
 #include <assert.h>
 
 
@@ -26,7 +26,7 @@ static const unsigned int prime_1 = 73;
 static const unsigned int prime_2 = 5009;
 
 struct hashmap_item_st {
-    void* key;
+    char* key;
     void* data;
     unsigned int hash;
 };
@@ -46,7 +46,7 @@ struct hashmap_st {
 
 struct hashset_item_st {
     unsigned int hash;
-    void* item;
+    char* item;
 };
 
 struct hashset_st {
@@ -61,9 +61,7 @@ struct hashset_st {
     hash_func_t hash_func;
 };
 
-/* ############# HASHMAP ############# */
-
-unsigned int hash_function(void* p, unsigned int len)
+unsigned int hash_function(char* p, unsigned int len)
 {
     unsigned int hash = 0;
     for (; *p; ++p)
@@ -71,57 +69,59 @@ unsigned int hash_function(void* p, unsigned int len)
     return hash;
 }
 
+/* ############# HASHMAP ############# */
+
 hashmap_t hashmap_create()
 {
-    hashmap_t set = (hashmap_t)calloc(1, sizeof(struct hashmap_st));
+    hashmap_t map = (hashmap_t)calloc(1, sizeof(struct hashmap_st));
 
-    if (set == NULL) {
+    if (map == NULL) {
         return NULL;
     }
     
-    set->hash_func = hash_function;
-    set->nbits = 3;
-    set->capacity = (unsigned int)(1 << set->nbits);
-    set->mask = set->capacity - 1;
-    set->items = (struct hashmap_item_st*)calloc(set->capacity, sizeof(struct hashmap_item_st));
-    if (set->items == NULL) {
-        hashmap_destroy(set);
+    map->hash_func = hash_function;
+    map->nbits = 3;
+    map->capacity = (unsigned int)(1 << map->nbits);
+    map->mask = map->capacity - 1;
+    map->items = (struct hashmap_item_st*)calloc(map->capacity, sizeof(struct hashmap_item_st));
+    if (map->items == NULL) {
+        hashmap_destroy(map);
         return NULL;
     }
-    set->nitems = 0;
-    set->n_deleted_items = 0;
-    return set;
+    map->nitems = 0;
+    map->n_deleted_items = 0;
+    return map;
 }
 
-void hashmap_clean(hashmap_t set)
+void hashmap_clean(hashmap_t map)
 {
-    set->nitems = 0;
-    set->n_deleted_items = 0;
+    map->nitems = 0;
+    map->n_deleted_items = 0;
 
     unsigned int i = 0;
-    while(i != set->capacity)
-        set->items[i++].hash = 0;
+    while(i != map->capacity)
+        map->items[i++].hash = 0;
 }
 
-unsigned int hashmap_num_items(hashmap_t set)
+unsigned int hashmap_num_items(hashmap_t map)
 {
-    return set->nitems;
+    return map->nitems;
 }
 
-void hashmap_destroy(hashmap_t set)
+void hashmap_destroy(hashmap_t map)
 {
-    if (set) {
-        free(set->items);
+    if (map) {
+        free(map->items);
     }
-    free(set);
+    free(map);
 }
 
-void hashmap_set_hash_function(hashmap_t set, hash_func_t func)
+void hashmap_set_hash_function(hashmap_t map, hash_func_t func)
 {
-    set->hash_func = func;
+    map->hash_func = func;
 }
 
-static int hashmap_add_member(hashmap_t set, void *item, unsigned int hash, void* data)
+static int hashmap_add_member(hashmap_t map, char* key, unsigned int hash, void* data)
 {
     unsigned int index;
 
@@ -129,104 +129,104 @@ static int hashmap_add_member(hashmap_t set, void *item, unsigned int hash, void
         return -1;
     }
 
-    index = set->mask & (prime_1 * hash);
+    index = map->mask & (prime_1 * hash);
 
-    while (set->items[index].hash > 1) {
-        if (set->items[index].hash == hash) {
+    while (map->items[index].hash > 1) {
+        if (map->items[index].hash == hash) {
             return 0;
         }
         else {
             /* search free slot */
-            index = set->mask & (index + prime_2);
+            index = map->mask & (index + prime_2);
         }
     }
 
-    ++set->nitems;
-    if (set->items[index].hash == 1) {
-        --set->n_deleted_items;
+    ++map->nitems;
+    if (map->items[index].hash == 1) {
+        --map->n_deleted_items;
     }
 
-    set->items[index].hash = hash;
-    set->items[index].key = item;
-    set->items[index].data = data;
+    map->items[index].hash = hash;
+    map->items[index].key = key;
+    map->items[index].data = data;
     return 1;
 }
 
-static void map_maybe_rehash(hashmap_t set)
+static void map_maybe_rehash(hashmap_t map)
 {
     struct hashmap_item_st *old_items;
     unsigned int old_capacity, index;
 
 
-    if (set->nitems + set->n_deleted_items >= (double)set->capacity * 0.85) {
-        old_items = set->items;
-        old_capacity = set->capacity;
-        ++set->nbits;
-        set->capacity = (unsigned int)(1 << set->nbits);
-        set->mask = set->capacity - 1;
-        set->items = (struct hashmap_item_st*)calloc(set->capacity, sizeof(struct hashmap_item_st));
-        set->nitems = 0;
-        set->n_deleted_items = 0;
-        assert(set->items);
+    if (map->nitems + map->n_deleted_items >= (double)map->capacity * 0.85) {
+        old_items = map->items;
+        old_capacity = map->capacity;
+        ++map->nbits;
+        map->capacity = (unsigned int)(1 << map->nbits);
+        map->mask = map->capacity - 1;
+        map->items = (struct hashmap_item_st*)calloc(map->capacity, sizeof(struct hashmap_item_st));
+        map->nitems = 0;
+        map->n_deleted_items = 0;
+        assert(map->items);
         for (index = 0; index < old_capacity; ++index) {
             if (old_items[index].key)
-                hashmap_add_member(set, old_items[index].key, old_items[index].hash, old_items[index].data);
+                hashmap_add_member(map, old_items[index].key, old_items[index].hash, old_items[index].data);
         }
         free(old_items);
     }
 }
 
-int hashmap_add(hashmap_t set, void *item, unsigned int len, void* data)
+int hashmap_add(hashmap_t map, char* key, unsigned int key_len, void* data)
 {
-    unsigned int hash = set->hash_func(item, len);
-    int rv = hashmap_add_member(set, item, hash, data);
-    map_maybe_rehash(set);
+    unsigned int hash = map->hash_func(key, key_len);
+    int rv = hashmap_add_member(map, key, hash, data);
+    map_maybe_rehash(map);
     return rv;
 }
 
-int hashmap_remove(hashmap_t set, void *item, unsigned int len)
+int hashmap_remove(hashmap_t map, char* key, unsigned int key_len)
 {
-    unsigned int hash = set->hash_func(item, len);
-    unsigned int index = set->mask & (prime_1 * hash);
+    unsigned int hash = map->hash_func(key, key_len);
+    unsigned int index = map->mask & (prime_1 * hash);
 
-    while (set->items[index].hash != 0) {
-        if (set->items[index].hash == hash) {
-            set->items[index].hash = 1;
-            --set->nitems;
-            ++set->n_deleted_items;
+    while (map->items[index].hash != 0) {
+        if (map->items[index].hash == hash) {
+            map->items[index].hash = 1;
+            --map->nitems;
+            ++map->n_deleted_items;
             return 1;
         } else {
-            index = set->mask & (index + prime_2);
+            index = map->mask & (index + prime_2);
         }
     }
     return 0;
 }
 
-int hashmap_is_member(hashmap_t set, void *item, unsigned int len)
+int hashmap_is_member(hashmap_t map, char* key, unsigned int key_len)
 {
-    unsigned int hash = set->hash_func(item, len);
-    unsigned int index = set->mask & (prime_1 * hash);
+    unsigned int hash = map->hash_func(key, key_len);
+    unsigned int index = map->mask & (prime_1 * hash);
 
-    while (set->items[index].hash != 0) {
-        if (set->items[index].hash == hash) {
+    while (map->items[index].hash != 0) {
+        if (map->items[index].hash == hash) {
             return 1;
         } else {
-            index = set->mask & (index + prime_2);
+            index = map->mask & (index + prime_2);
         }
     }
     return 0;
 }
 
-void* hashmap_get(hashmap_t set, void *item, unsigned int len)
+void* hashmap_get(hashmap_t map, char* key, unsigned int key_len)
 {
-    unsigned int hash = set->hash_func(item, len);
-    unsigned int index = set->mask & (prime_1 * hash);
+    unsigned int hash = map->hash_func(key, key_len);
+    unsigned int index = map->mask & (prime_1 * hash);
 
-    while (set->items[index].hash != 0) {
-        if (set->items[index].hash == hash) {
-            return set->items[index].data;
+    while (map->items[index].hash != 0) {
+        if (map->items[index].hash == hash) {
+            return map->items[index].data;
         } else {
-            index = set->mask & (index + prime_2);
+            index = map->mask & (index + prime_2);
         }
     }
     return NULL;
@@ -283,7 +283,7 @@ void hashset_set_hash_function(hashset_t set, hash_func_t func)
     set->hash_func = func;
 }
 
-static int hashset_add_member(hashset_t set, void *item, unsigned int hash)
+static int hashset_add_member(hashset_t set, char* key, unsigned int hash)
 {
     unsigned int index;
 
@@ -309,7 +309,7 @@ static int hashset_add_member(hashset_t set, void *item, unsigned int hash)
     }
 
     set->items[index].hash = hash;
-    set->items[index].item = item;
+    set->items[index].item = key;
     return 1;
 }
 
@@ -336,17 +336,17 @@ static void set_maybe_rehash(hashset_t set)
     }
 }
 
-int hashset_add(hashset_t set, void *item, unsigned int len)
+int hashset_add(hashset_t set, char* key, unsigned int key_len)
 {
-    unsigned int hash = set->hash_func(item, len);
-    int rv = hashset_add_member(set, item, hash);
+    unsigned int hash = set->hash_func(key, key_len);
+    int rv = hashset_add_member(set, key, hash);
     set_maybe_rehash(set);
     return rv;
 }
 
-int hashset_remove(hashset_t set, void *item, unsigned int len)
+int hashset_remove(hashset_t set, char* key, unsigned int key_len)
 {
-    unsigned int hash = set->hash_func(item, len);
+    unsigned int hash = set->hash_func(key, key_len);
     unsigned int index = set->mask & (prime_1 * hash);
 
     while (set->items[index].hash != 0) {
@@ -362,9 +362,9 @@ int hashset_remove(hashset_t set, void *item, unsigned int len)
     return 0;
 }
 
-int hashset_is_member(hashset_t set, void *item, unsigned int len)
+int hashset_is_member(hashset_t set, char* key, unsigned int key_len)
 {
-    unsigned int hash = set->hash_func(item, len);
+    unsigned int hash = set->hash_func(key, key_len);
     unsigned int index = set->mask & (prime_1 * hash);
 
     while (set->items[index].hash != 0) {
