@@ -1,4 +1,3 @@
-/* -*- Mode: C; tab-width: 4; c-basic-offset: 4; indent-tabs-mode: nil -*- */
 /*
  *     Copyright 2018 Erhan BARIS (Ruslan Ognyanov Asenov)
  *     Copyright 2012 Couchbase, Inc.
@@ -17,22 +16,27 @@
  */
 
 #ifndef HASHSET_H
-#define HASHSET_H 1
+#define HASHSET_H
 
 #include <stdlib.h>
+#include <stdint.h>
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
     /* hash function */
-    typedef unsigned int(*hash_func_t)(char*, unsigned int);
+    typedef size_t(*hash_func_t)(char*, size_t);
 
     struct hashset_st;
     typedef struct hashset_st *hashset_t;
 
     struct hashmap_st;
     typedef struct hashmap_st *hashmap_t;
+
+    /*
+     * HASHSET FUNCTIONS
+     */
 
     /* create hashset instance */
     hashset_t hashset_create(void);
@@ -47,7 +51,7 @@ extern "C" {
     void hashset_clean(hashset_t set);
 
     /* total items count */
-    unsigned int hashset_num_items(hashset_t set);
+    size_t hashset_num_items(hashset_t set);
 
     /* add item into the hashset.
      *
@@ -56,35 +60,39 @@ extern "C" {
      *
      * returns zero if the item already in the set and non-zero otherwise
      */
-    int hashset_add(hashset_t set, char* key, unsigned int key_len);
+    int hashset_add(hashset_t set, char* key, size_t key_len);
 
     /* remove item from the hashset
      *
      * returns non-zero if the item was removed and zero if the item wasn't
      * exist
      */
-    int hashset_remove(hashset_t set, char *key, unsigned int key_len);
+    int hashset_remove(hashset_t set, char *key, size_t key_len);
 
     /* check if existence of the item
      *
      * returns non-zero if the item exists and zero otherwise
      */
-    int hashset_is_member(hashset_t set, char* key, unsigned int key_len);
+    int hashset_is_member(hashset_t set, char* key, size_t key_len);
 
     /* create hashmap instance */
     hashmap_t hashmap_create(void);
 
+    /*
+     * HASHMAP FUNCTIONS
+     */
+
     /* destroy hashmap instance */
-    void hashmap_destroy(hashmap_t set);
+    void hashmap_destroy(hashmap_t map);
 
     /* set hash function */
-    void hashmap_set_hash_function(hashmap_t set, hash_func_t func);
+    void hashmap_set_hash_function(hashmap_t map, hash_func_t func);
 
     /* Just clear data but do not create anything*/
-    void hashmap_clean(hashmap_t set);
+    void hashmap_clean(hashmap_t map);
 
     /* total items count */
-    unsigned int hashmap_num_items(hashmap_t set);
+    size_t hashmap_num_items(hashmap_t map);
 
     /* add item into the hashmap.
      *
@@ -93,29 +101,30 @@ extern "C" {
      *
      * returns zero if the item already in the set and non-zero otherwise
      */
-    int hashmap_add(hashmap_t set, char* key, unsigned int key_len, void* data);
+    int hashmap_add(hashmap_t map, char* key, size_t key_len, void* data);
 
     /* get item from the hashmap.
      *
      * returns stored item
      */
-    void* hashmap_get(hashmap_t set, char* key, unsigned int key_len);
+    void* hashmap_get(hashmap_t map, char* key, size_t key_len);
 
     /* remove item from the hashmap
      *
      * returns non-zero if the item was removed and zero if the item wasn't
      * exist
      */
-    int hashmap_remove(hashmap_t set, char* key, unsigned int key_len);
+    int hashmap_remove(hashmap_t map, char* key, size_t key_len);
 
     /* check if existence of the item
      *
      * returns non-zero if the item exists and zero otherwise
      */
-    int hashmap_is_member(hashmap_t set, char* key, unsigned int key_len);
+    int hashmap_is_member(hashmap_t map, char* key, size_t key_len);
 
 #ifdef __cplusplus
 }
 #endif
+
 
 #endif
